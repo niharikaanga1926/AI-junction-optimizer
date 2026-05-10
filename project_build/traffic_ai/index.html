@@ -1,0 +1,1011 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>AI Junction Optimizer</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet" />
+<style>
+  /* ── Reset & Root ────────────────────────────────────── */
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg:        #080c10;
+    --surface:   #0e1420;
+    --panel:     #131b28;
+    --border:    #1e2d42;
+    --accent:    #00e5ff;
+    --accent2:   #7c3aed;
+    --green:     #22c55e;
+    --amber:     #f59e0b;
+    --red:       #ef4444;
+    --text:      #e2eaf6;
+    --muted:     #5a7090;
+    --sim-color: #f59e0b;
+    --font-mono: 'JetBrains Mono', monospace;
+    --font-ui:   'Syne', sans-serif;
+    --radius:    8px;
+    --glow:      0 0 20px rgba(0,229,255,.18);
+  }
+
+  html { font-size: 14px; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font-ui);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* ── Layout ─────────────────────────────────────────── */
+  .header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 14px 24px;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    position: sticky; top: 0; z-index: 100;
+  }
+
+  .header-logo { display: flex; align-items: center; gap: 10px; }
+
+  .logo-icon {
+    width: 32px; height: 32px; background: var(--accent);
+    clip-path: polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%);
+    animation: pulse-logo 3s ease-in-out infinite;
+  }
+
+  @keyframes pulse-logo {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50%       { opacity: .8; transform: scale(1.08); }
+  }
+
+  .logo-text { font-size: 1.1rem; font-weight: 800; letter-spacing: .04em; color: var(--accent); }
+  .logo-sub  { font-size: .65rem; color: var(--muted); font-family: var(--font-mono); }
+
+  .header-right { display: flex; align-items: center; gap: 12px; }
+
+  .conn-badge {
+    font-family: var(--font-mono); font-size: .65rem;
+    padding: 3px 10px; border-radius: 20px;
+    background: rgba(239,68,68,.15); color: var(--red);
+    border: 1px solid rgba(239,68,68,.3);
+    transition: all .3s;
+  }
+
+  .conn-badge.connected { background: rgba(34,197,94,.12); color: var(--green); border-color: rgba(34,197,94,.3); }
+
+  .grid {
+    display: grid;
+    grid-template-columns: 340px 1fr;
+    grid-template-rows: auto;
+    gap: 16px;
+    padding: 16px;
+    max-width: 1600px;
+    margin: 0 auto;
+  }
+
+  .sidebar { display: flex; flex-direction: column; gap: 16px; }
+  .main-col { display: flex; flex-direction: column; gap: 16px; }
+
+  /* ── Simulation Banner ───────────────────────────────── */
+  #sim-banner {
+    display: none;
+    position: fixed; top: 60px; left: 50%; transform: translateX(-50%);
+    z-index: 200;
+    background: var(--sim-color); color: #000;
+    font-weight: 700; font-size: .85rem; font-family: var(--font-mono);
+    padding: 8px 20px; border-radius: 20px;
+    box-shadow: 0 0 30px rgba(245,158,11,.5);
+    animation: banner-pop .3s ease;
+    white-space: nowrap;
+  }
+
+  @keyframes banner-pop {
+    from { transform: translateX(-50%) translateY(-8px); opacity: 0; }
+    to   { transform: translateX(-50%) translateY(0);   opacity: 1; }
+  }
+
+  /* ── Panel ───────────────────────────────────────────── */
+  .panel {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+  }
+
+  .panel-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 10px 14px;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+  }
+
+  .panel-title {
+    font-size: .75rem; font-weight: 700; letter-spacing: .08em;
+    text-transform: uppercase; color: var(--accent);
+    display: flex; align-items: center; gap: 6px;
+  }
+
+  .panel-body { padding: 14px; }
+
+  /* ── AI Status Card ──────────────────────────────────── */
+  .ai-status-card {
+    display: flex; align-items: center; gap: 12px;
+    background: var(--bg); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 10px 14px;
+  }
+
+  .ai-status-dot {
+    width: 10px; height: 10px; border-radius: 50%;
+    background: var(--muted); flex-shrink: 0;
+    transition: background .4s;
+  }
+
+  .ai-status-dot.active {
+    background: var(--green);
+    box-shadow: 0 0 8px rgba(34,197,94,.5);
+    animation: pulse-dot 2s ease-in-out infinite;
+  }
+
+  .ai-status-dot.error { background: var(--red); }
+
+  @keyframes pulse-dot {
+    0%, 100% { opacity: 1; }
+    50%       { opacity: .5; }
+  }
+
+  .ai-status-info { flex: 1; }
+  .ai-status-label { font-size: .7rem; font-weight: 700; color: var(--text); }
+  .ai-status-sub   { font-size: .6rem; color: var(--muted); font-family: var(--font-mono); margin-top: 2px; }
+
+  /* ── Buttons ─────────────────────────────────────────── */
+  .btn {
+    border: none; cursor: pointer; font-family: var(--font-ui);
+    font-size: .72rem; font-weight: 700; letter-spacing: .06em;
+    padding: 7px 14px; border-radius: var(--radius);
+    transition: all .2s; text-transform: uppercase;
+  }
+
+  .btn-accent { background: var(--accent); color: #000; }
+  .btn-accent:hover { filter: brightness(1.15); box-shadow: var(--glow); }
+
+  .btn-outline {
+    background: transparent; color: var(--accent);
+    border: 1px solid var(--accent);
+  }
+
+  .btn-outline:hover { background: rgba(0,229,255,.08); }
+
+  .btn-danger { background: var(--red); color: #fff; }
+  .btn-danger:hover { filter: brightness(1.15); }
+
+  .btn-sm { padding: 5px 10px; font-size: .65rem; }
+
+  /* ── Signal Grid ─────────────────────────────────────── */
+  .signal-grid {
+    display: grid; grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+
+  .arm-card {
+    background: var(--bg); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 10px;
+    position: relative; overflow: hidden;
+  }
+
+  .arm-card::before {
+    content: ''; position: absolute; inset: 0; opacity: .04;
+    background: var(--arm-color, var(--accent));
+    pointer-events: none;
+  }
+
+  .arm-label { font-size: .65rem; font-weight: 700; color: var(--muted); text-transform: uppercase; }
+  .arm-density { font-size: 1.6rem; font-weight: 800; font-family: var(--font-mono); color: var(--text); line-height: 1.1; }
+  .arm-signal { font-size: .65rem; font-family: var(--font-mono); margin-top: 4px; }
+
+  .sig-green  { color: var(--green); }
+  .sig-red    { color: var(--red); }
+  .sig-yellow { color: var(--amber); }
+  .sig-emergency_override { color: #a855f7; }
+
+  .density-bar {
+    height: 3px; border-radius: 2px; margin-top: 6px;
+    background: var(--border);
+    overflow: hidden;
+  }
+
+  .density-fill {
+    height: 100%; border-radius: 2px;
+    background: linear-gradient(90deg, var(--green), var(--accent));
+    transition: width .6s ease;
+  }
+
+  .density-fill.high { background: linear-gradient(90deg, var(--amber), var(--red)); }
+
+  /* ── Lane Suggestions ────────────────────────────────── */
+  .suggestion-list { display: flex; flex-direction: column; gap: 6px; max-height: 200px; overflow-y: auto; }
+
+  .suggestion-item {
+    background: rgba(245,158,11,.07); border: 1px solid rgba(245,158,11,.25);
+    border-left: 3px solid var(--amber);
+    border-radius: var(--radius); padding: 8px 10px;
+    font-family: var(--font-mono); font-size: .65rem; color: #fcd34d;
+    line-height: 1.4;
+  }
+
+  .suggestion-time { color: var(--muted); font-size: .55rem; margin-top: 3px; }
+
+  .empty-state { text-align: center; color: var(--muted); font-size: .7rem; padding: 20px; font-family: var(--font-mono); }
+
+  /* ── AI Briefing ─────────────────────────────────────── */
+  .briefing-text {
+    font-size: .8rem; line-height: 1.6; color: var(--text);
+    white-space: pre-wrap; min-height: 50px;
+  }
+
+  .briefing-meta {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-top: 10px;
+  }
+
+  .briefing-ts { font-family: var(--font-mono); font-size: .6rem; color: var(--muted); }
+
+  .countdown {
+    font-family: var(--font-mono); font-size: .65rem; color: var(--accent);
+    background: rgba(0,229,255,.08); padding: 3px 8px; border-radius: 20px;
+  }
+
+  .briefing-loading {
+    display: inline-block; width: 8px; height: 8px; border-radius: 50%;
+    background: var(--accent); animation: blink .8s ease-in-out infinite;
+    margin-right: 6px;
+  }
+
+  @keyframes blink { 0%,100%{opacity:1} 50%{opacity:.2} }
+
+  /* ── Efficiency Panel ────────────────────────────────── */
+  .eff-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
+
+  .eff-metric {
+    background: var(--bg); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 10px;
+    text-align: center;
+  }
+
+  .eff-label { font-size: .6rem; font-weight: 700; text-transform: uppercase; color: var(--muted); margin-bottom: 6px; }
+
+  .eff-values { display: flex; justify-content: space-around; align-items: baseline; }
+
+  .eff-base-val { font-family: var(--font-mono); font-size: .8rem; color: var(--muted); text-decoration: line-through; }
+  .eff-ai-val   { font-family: var(--font-mono); font-size: 1.1rem; font-weight: 700; color: var(--green); }
+
+  .eff-pct {
+    font-size: .65rem; font-family: var(--font-mono); font-weight: 700;
+    padding: 2px 7px; border-radius: 20px; margin-top: 6px; display: inline-block;
+  }
+
+  .eff-pct.positive { background: rgba(34,197,94,.15); color: var(--green); }
+  .eff-pct.negative { background: rgba(239,68,68,.15); color: var(--red); }
+
+  .impact-score-wrap {
+    display: flex; align-items: center; justify-content: center; gap: 16px;
+    margin-top: 14px; padding: 12px;
+    background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius);
+  }
+
+  .impact-label { font-size: .7rem; color: var(--muted); }
+
+  .impact-value { font-size: 2.4rem; font-weight: 800; font-family: var(--font-mono); color: var(--accent); }
+
+  .impact-bar-wrap { flex: 1; height: 6px; background: var(--border); border-radius: 3px; overflow: hidden; }
+
+  .impact-bar-fill {
+    height: 100%; border-radius: 3px;
+    background: linear-gradient(90deg, var(--accent2), var(--accent));
+    transition: width .8s ease;
+  }
+
+  /* ── Simulation Controls ─────────────────────────────── */
+  .sim-scenarios { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+
+  .sim-btn {
+    background: var(--bg); border: 1px solid var(--border);
+    color: var(--text); border-radius: var(--radius);
+    padding: 10px; cursor: pointer; font-family: var(--font-ui);
+    font-size: .72rem; font-weight: 700; text-align: left;
+    transition: all .2s; line-height: 1.3;
+  }
+
+  .sim-btn:hover { border-color: var(--accent); background: rgba(0,229,255,.05); }
+
+  .sim-btn.active {
+    border-color: var(--sim-color); background: rgba(245,158,11,.1);
+    box-shadow: 0 0 16px rgba(245,158,11,.2);
+  }
+
+  .sim-btn .sim-icon { font-size: 1.1rem; display: block; margin-bottom: 3px; }
+  .sim-btn .sim-name { font-size: .65rem; color: var(--muted); }
+
+  .sim-status {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-top: 10px; padding: 8px 10px;
+    background: var(--bg); border-radius: var(--radius);
+    border: 1px solid var(--border); font-family: var(--font-mono); font-size: .65rem;
+  }
+
+  /* ── Carbon Savings ──────────────────────────────────── */
+  .carbon-hero { display: flex; align-items: baseline; gap: 8px; }
+  .carbon-kg { font-size: 2.4rem; font-weight: 800; font-family: var(--font-mono); color: var(--green); }
+  .carbon-unit { font-size: .8rem; color: var(--muted); }
+
+  .carbon-rate {
+    font-family: var(--font-mono); font-size: .7rem; color: var(--accent);
+    margin-top: 4px;
+  }
+
+  .sparkline { width: 100%; height: 40px; margin-top: 10px; }
+  .sparkline path { fill: none; stroke: var(--green); stroke-width: 1.5; }
+  .sparkline .area { fill: rgba(34,197,94,.12); stroke: none; }
+
+  /* ── Video Feed ──────────────────────────────────────── */
+  .video-wrap {
+    position: relative; background: var(--bg);
+    border-radius: var(--radius); overflow: hidden;
+    aspect-ratio: 16/9;
+  }
+
+  #video-feed { width: 100%; height: 100%; object-fit: cover; display: block; }
+
+  .video-placeholder {
+    position: absolute; inset: 0; display: flex; flex-direction: column;
+    align-items: center; justify-content: center; gap: 8px;
+    color: var(--muted); font-family: var(--font-mono); font-size: .7rem;
+  }
+
+  .video-icon { font-size: 2rem; }
+
+  /* ── Incident Log ────────────────────────────────────── */
+  .incident-log {
+    max-height: 160px; overflow-y: auto;
+    display: flex; flex-direction: column; gap: 4px;
+    font-family: var(--font-mono); font-size: .65rem;
+  }
+
+  .incident-row {
+    display: flex; gap: 8px; align-items: flex-start;
+    padding: 5px 8px; border-radius: 4px;
+    background: rgba(255,255,255,.02); border-left: 2px solid var(--border);
+  }
+
+  .incident-row.LANE_ADVISORY { border-left-color: var(--amber); }
+  .incident-row.SIM { border-left-color: var(--accent2); }
+  .incident-row.Emergency, .incident-row.EMERGENCY { border-left-color: var(--red); }
+
+  .incident-type {
+    font-size: .55rem; font-weight: 700; padding: 1px 5px; border-radius: 3px;
+    background: rgba(255,255,255,.06); white-space: nowrap;
+    align-self: center;
+  }
+
+  .incident-msg { color: var(--text); line-height: 1.4; flex: 1; }
+  .incident-ts  { color: var(--muted); font-size: .55rem; white-space: nowrap; }
+
+  /* ── Scrollbar ───────────────────────────────────────── */
+  ::-webkit-scrollbar { width: 4px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+  /* ── Toast ───────────────────────────────────────────── */
+  #toast {
+    position: fixed; bottom: 20px; right: 20px; z-index: 999;
+    font-family: var(--font-mono); font-size: .7rem;
+    padding: 10px 16px; border-radius: var(--radius);
+    background: var(--panel); border: 1px solid var(--border);
+    color: var(--text); opacity: 0; pointer-events: none;
+    transform: translateY(8px);
+    transition: all .3s;
+    max-width: 300px;
+  }
+
+  #toast.show { opacity: 1; pointer-events: all; transform: translateY(0); }
+  #toast.ok   { border-color: var(--green); color: var(--green); }
+  #toast.err  { border-color: var(--red);   color: var(--red);   }
+
+  /* ── Responsive ──────────────────────────────────────── */
+  @media (max-width: 900px) {
+    .grid { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ── Simulation Banner ──────────────────────────────── -->
+<div id="sim-banner"></div>
+
+<!-- ── Header ────────────────────────────────────────── -->
+<header class="header">
+  <div class="header-logo">
+    <div class="logo-icon"></div>
+    <div>
+      <div class="logo-text">AI Junction Optimizer</div>
+      <div class="logo-sub">Real-time adaptive signal control</div>
+    </div>
+  </div>
+  <div class="header-right">
+    <span id="ws-badge" class="conn-badge">● SIGNALS DISCONNECTED</span>
+    <span id="feat-badge" class="conn-badge">● FEATURES DISCONNECTED</span>
+  </div>
+</header>
+
+<!-- ── Main Grid ──────────────────────────────────────── -->
+<div class="grid">
+
+  <!-- ── Sidebar ────────────────────────────────────── -->
+  <div class="sidebar">
+
+    <!-- ✅ REPLACED: AI Engine Status (no API key input needed) -->
+    <div class="panel">
+      <div class="panel-header">
+        <span class="panel-title">🤖 AI Engine</span>
+        <span id="ai-engine-badge" class="conn-badge" style="font-size:.55rem">● CHECKING</span>
+      </div>
+      <div class="panel-body">
+        <div class="ai-status-card">
+          <div class="ai-status-dot" id="ai-status-dot"></div>
+          <div class="ai-status-info">
+            <div class="ai-status-label" id="ai-status-label">Connecting to AI engine…</div>
+            <div class="ai-status-sub" id="ai-status-sub">API key configured in server .env</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Signal States -->
+    <div class="panel">
+      <div class="panel-header">
+        <span class="panel-title">🚦 Signal States</span>
+        <span style="font-family:var(--font-mono);font-size:.6rem;color:var(--muted)" id="signal-ts">–</span>
+      </div>
+      <div class="panel-body">
+        <div class="signal-grid" id="signal-grid">
+          <!-- populated by JS -->
+        </div>
+      </div>
+    </div>
+
+    <!-- Carbon Savings -->
+    <div class="panel">
+      <div class="panel-header">
+        <span class="panel-title">🌱 Carbon Savings</span>
+      </div>
+      <div class="panel-body">
+        <div class="carbon-hero">
+          <span class="carbon-kg" id="carbon-kg">0.0000</span>
+          <span class="carbon-unit">kg CO₂ saved</span>
+        </div>
+        <div class="carbon-rate" id="carbon-rate">Rate: 0.00 g/min saved vs fixed timer</div>
+        <svg class="sparkline" id="sparkline" viewBox="0 0 200 40" preserveAspectRatio="none">
+          <path class="area" id="spark-area" d="M0 40 L200 40 Z" />
+          <path id="spark-line" d="M0 40" />
+        </svg>
+      </div>
+    </div>
+
+    <!-- Simulation Mode -->
+    <div class="panel">
+      <div class="panel-header">
+        <span class="panel-title">🎮 Simulation Mode</span>
+      </div>
+      <div class="panel-body">
+        <div class="sim-scenarios">
+          <button class="sim-btn" id="sim-rush_hour" onclick="startSim('rush_hour')">
+            <span class="sim-icon">🚗</span>Rush Hour
+            <span class="sim-name">70-90% density spike</span>
+          </button>
+          <button class="sim-btn" id="sim-emergency" onclick="startSim('emergency')">
+            <span class="sim-icon">🚨</span>Emergency
+            <span class="sim-name">Random arm override</span>
+          </button>
+          <button class="sim-btn" id="sim-accident" onclick="startSim('accident')">
+            <span class="sim-icon">⚠️</span>Accident
+            <span class="sim-name">One arm locked 100%</span>
+          </button>
+          <button class="sim-btn" id="sim-off_peak" onclick="startSim('off_peak')">
+            <span class="sim-icon">🌙</span>Off-Peak
+            <span class="sim-name">Low 5-15% density</span>
+          </button>
+        </div>
+        <div class="sim-status">
+          <span id="sim-status-label">No simulation active</span>
+          <button class="btn btn-danger btn-sm" id="sim-stop-btn" onclick="stopSim()" style="display:none">Stop</button>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /sidebar -->
+
+  <!-- ── Main Column ────────────────────────────────── -->
+  <div class="main-col">
+
+    <!-- AI Briefing -->
+    <div class="panel">
+      <div class="panel-header">
+        <span class="panel-title">🤖 AI Natural Language Briefing</span>
+        <div style="display:flex;gap:8px;align-items:center">
+          <span class="countdown" id="briefing-countdown">Next: 30s</span>
+        </div>
+      </div>
+      <div class="panel-body">
+        <div class="briefing-text" id="briefing-text">
+          <span class="briefing-loading"></span>Awaiting connection…
+        </div>
+        <div class="briefing-meta">
+          <span class="briefing-ts" id="briefing-ts">–</span>
+          <span id="briefing-scenario" style="font-family:var(--font-mono);font-size:.6rem;color:var(--accent2)"></span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Efficiency Panel -->
+    <div class="panel">
+      <div class="panel-header">
+        <span class="panel-title">📊 Before vs After Efficiency</span>
+      </div>
+      <div class="panel-body">
+        <div class="eff-grid">
+          <div class="eff-metric">
+            <div class="eff-label">Avg Wait Time</div>
+            <div class="eff-values">
+              <span class="eff-base-val">45s</span>
+              <span class="eff-ai-val" id="eff-wait">–</span>
+            </div>
+            <div class="eff-pct" id="eff-wait-pct">–</div>
+          </div>
+          <div class="eff-metric">
+            <div class="eff-label">Throughput</div>
+            <div class="eff-values">
+              <span class="eff-base-val">20/m</span>
+              <span class="eff-ai-val" id="eff-thru">–</span>
+            </div>
+            <div class="eff-pct" id="eff-thru-pct">–</div>
+          </div>
+          <div class="eff-metric">
+            <div class="eff-label">CO₂ Emissions</div>
+            <div class="eff-values">
+              <span class="eff-base-val">100g/m</span>
+              <span class="eff-ai-val" id="eff-co2">–</span>
+            </div>
+            <div class="eff-pct" id="eff-co2-pct">–</div>
+          </div>
+        </div>
+        <div class="impact-score-wrap">
+          <div>
+            <div class="impact-label">AI Impact Score</div>
+            <div class="impact-value" id="impact-score">–</div>
+          </div>
+          <div style="flex:1">
+            <div class="impact-bar-wrap">
+              <div class="impact-bar-fill" id="impact-bar" style="width:0%"></div>
+            </div>
+            <div style="font-family:var(--font-mono);font-size:.55rem;color:var(--muted);margin-top:4px">
+              Composite score: wait 40% · throughput 35% · CO₂ 25%
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Lane Suggestions -->
+    <div class="panel">
+      <div class="panel-header">
+        <span class="panel-title">🛣 Lane Management Suggestions</span>
+        <span style="font-family:var(--font-mono);font-size:.6rem;color:var(--muted)" id="lane-count">0 active</span>
+      </div>
+      <div class="panel-body">
+        <div class="suggestion-list" id="lane-suggestions">
+          <div class="empty-state">No density thresholds exceeded (&gt;50% triggers advisory)</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Video Feed -->
+    <div class="panel">
+      <div class="panel-header">
+        <span class="panel-title">📹 Live Junction Feed</span>
+        <span id="frame-badge" class="conn-badge" style="font-size:.55rem">● NO FEED</span>
+      </div>
+      <div class="panel-body" style="padding:0">
+        <div class="video-wrap">
+          <img id="video-feed" style="display:none" />
+          <div class="video-placeholder" id="video-placeholder">
+            <span class="video-icon">📷</span>
+            <span>Connecting to video feed…</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Incident Log -->
+    <div class="panel">
+      <div class="panel-header">
+        <span class="panel-title">📋 Incident Log</span>
+        <button class="btn btn-outline btn-sm" onclick="clearIncidentUI()">Clear view</button>
+      </div>
+      <div class="panel-body">
+        <div class="incident-log" id="incident-log"></div>
+      </div>
+    </div>
+
+  </div><!-- /main-col -->
+</div><!-- /grid -->
+
+<div id="toast"></div>
+
+<script>
+// ─────────────────────────────────────────────────────────────
+// Config
+// ─────────────────────────────────────────────────────────────
+const HOST      = location.hostname || '127.0.0.1';
+const BASE_HTTP = `${location.protocol}//${HOST}:8000`;
+const BASE_WS   = `${location.protocol === 'https:' ? 'wss' : 'ws'}://${HOST}:8000`;
+
+const ARM_COLORS = { North: '#00e5ff', South: '#7c3aed', East: '#f59e0b', West: '#22c55e' };
+
+// ─────────────────────────────────────────────────────────────
+// State
+// ─────────────────────────────────────────────────────────────
+let signalState  = {};
+let densityState = {};
+let incidentRows = [];
+let simActive    = false;
+let carbonHistory= [];
+
+// ─────────────────────────────────────────────────────────────
+// Toast
+// ─────────────────────────────────────────────────────────────
+function toast(msg, type = 'ok') {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.className = `show ${type}`;
+  clearTimeout(el._t);
+  el._t = setTimeout(() => el.classList.remove('show'), 3500);
+}
+
+// ─────────────────────────────────────────────────────────────
+// AI Engine Status (replaces API key logic)
+// ─────────────────────────────────────────────────────────────
+function setAiStatus(state, label, sub) {
+  // state: 'active' | 'error' | 'pending'
+  const dot   = document.getElementById('ai-status-dot');
+  const lbl   = document.getElementById('ai-status-label');
+  const sublbl= document.getElementById('ai-status-sub');
+  const badge = document.getElementById('ai-engine-badge');
+
+  dot.className = `ai-status-dot ${state === 'active' ? 'active' : state === 'error' ? 'error' : ''}`;
+  lbl.textContent  = label;
+  sublbl.textContent = sub;
+
+  if (state === 'active') {
+    badge.textContent = '● AI ONLINE';
+    badge.className = 'conn-badge connected';
+  } else if (state === 'error') {
+    badge.textContent = '● AI ERROR';
+    badge.className = 'conn-badge';
+    badge.style.borderColor = 'rgba(239,68,68,.3)';
+  } else {
+    badge.textContent = '● CHECKING';
+    badge.className = 'conn-badge';
+  }
+}
+
+// ─────────────────────────────────────────────────────────────
+// WS: Main signals + density (existing endpoints)
+// ─────────────────────────────────────────────────────────────
+function connectMainWS() {
+  const sigWS = new WebSocket(`${BASE_WS}/ws/signals`);
+  sigWS.onopen  = () => setBadge('ws-badge', true, 'SIGNALS');
+  sigWS.onclose = () => { setBadge('ws-badge', false, 'SIGNALS'); setTimeout(connectMainWS, 3000); };
+  sigWS.onmessage = e => {
+    const msg = JSON.parse(e.data);
+    if (msg.type === 'signal') handleSignal(msg.data);
+  };
+
+  const denWS = new WebSocket(`${BASE_WS}/ws/density`);
+  denWS.onmessage = e => {
+    const msg = JSON.parse(e.data);
+    if (msg.type === 'density') handleDensity(msg.data);
+  };
+
+  const frWS = new WebSocket(`${BASE_WS}/ws/frame`);
+  frWS.onmessage = e => {
+    const msg = JSON.parse(e.data);
+    if (msg.type === 'frame') handleFrame(msg.data);
+  };
+}
+
+// ─────────────────────────────────────────────────────────────
+// WS: Features (new endpoint)
+// ─────────────────────────────────────────────────────────────
+function connectFeaturesWS() {
+  const ws = new WebSocket(`${BASE_WS}/ws/features`);
+  ws.onopen  = () => setBadge('feat-badge', true, 'FEATURES');
+  ws.onclose = () => { setBadge('feat-badge', false, 'FEATURES'); setTimeout(connectFeaturesWS, 3000); };
+  ws.onmessage = e => {
+    const msg = JSON.parse(e.data);
+    if (msg.type === 'features_update') handleFeaturesUpdate(msg);
+  };
+}
+
+// ─────────────────────────────────────────────────────────────
+// Signal & Density Handlers
+// ─────────────────────────────────────────────────────────────
+function handleSignal(data) {
+  signalState = data;
+  document.getElementById('signal-ts').textContent = fmtTime(data.timestamp);
+  updateSignalGrid();
+
+  if (data.incidents) {
+    const fresh = data.incidents.slice(-5);
+    fresh.forEach(inc => addIncident(inc.message, inc.type || 'INFO', inc.timestamp));
+  }
+}
+
+function handleDensity(data) {
+  densityState = data;
+  updateSignalGrid();
+}
+
+function handleFrame(b64) {
+  const img = document.getElementById('video-feed');
+  const ph  = document.getElementById('video-placeholder');
+  img.src = `data:image/jpeg;base64,${b64}`;
+  img.style.display = 'block';
+  ph.style.display  = 'none';
+  setBadge('frame-badge', true, 'LIVE');
+}
+
+function updateSignalGrid() {
+  const grid = document.getElementById('signal-grid');
+  const arms = ['North', 'South', 'East', 'West'];
+  grid.innerHTML = arms.map(arm => {
+    const sig = (signalState.signals || {})[arm] || 'red';
+    const den = ((densityState.arms || {})[arm] || {}).density_score || 0;
+    const high = den > 50;
+    const col  = ARM_COLORS[arm];
+    return `
+      <div class="arm-card" style="--arm-color:${col}; border-color: ${sig === 'green' ? col : 'var(--border)'}">
+        <div class="arm-label" style="color:${col}">${arm}</div>
+        <div class="arm-density">${den.toFixed(0)}<span style="font-size:.8rem;color:var(--muted)">%</span></div>
+        <div class="arm-signal sig-${sig}">● ${sig.toUpperCase()}</div>
+        <div class="density-bar">
+          <div class="density-fill ${high ? 'high' : ''}" style="width:${Math.min(100,den)}%"></div>
+        </div>
+      </div>`;
+  }).join('');
+}
+
+// ─────────────────────────────────────────────────────────────
+// Features Update Handler
+// ─────────────────────────────────────────────────────────────
+function handleFeaturesUpdate(msg) {
+  updateLaneSuggestions(msg.lane_suggestions || []);
+  updateBriefing(msg.ai_briefing || {});
+  updateEfficiency(msg.efficiency || {});
+  updateSimState(msg.simulation || {});
+  updateCarbon(msg.carbon || {});
+}
+
+// Feature 1 – Lane Suggestions
+function updateLaneSuggestions(suggestions) {
+  const el = document.getElementById('lane-suggestions');
+  const countEl = document.getElementById('lane-count');
+  countEl.textContent = `${suggestions.length} active`;
+  if (!suggestions.length) {
+    el.innerHTML = '<div class="empty-state">No density thresholds exceeded (&gt;50% triggers advisory)</div>';
+    return;
+  }
+  el.innerHTML = suggestions.slice().reverse().map(s => `
+    <div class="suggestion-item">
+      ${s.message}
+      <div class="suggestion-time">${fmtTime(s.timestamp)}</div>
+    </div>`).join('');
+
+  suggestions.forEach(s => addIncident(s.message, 'LANE_ADVISORY', s.timestamp));
+}
+
+// Feature 2 – AI Briefing
+// ✅ Now detects API key errors and updates AI status indicator
+function updateBriefing(b) {
+  const textEl = document.getElementById('briefing-text');
+  const tsEl   = document.getElementById('briefing-ts');
+  const cdEl   = document.getElementById('briefing-countdown');
+  const scEl   = document.getElementById('briefing-scenario');
+
+  if (b.text) {
+    const isKeyMissing = b.text.includes('No API key');
+    const isError      = b.text.startsWith('Briefing unavailable') || b.text.includes('error') || b.text.includes('Error');
+
+    if (isKeyMissing) {
+      // Key not set in .env
+      textEl.innerHTML = '⚠️ No API key configured on server.<br><span style="font-size:.7rem;color:var(--muted)">Add ANTHROPIC_API_KEY to your .env file and restart the server.</span>';
+      setAiStatus('error', 'API Key Missing', 'Set ANTHROPIC_API_KEY in .env and restart');
+    } else if (isError) {
+      // API call failed (bad key, network, etc.)
+      textEl.innerHTML = `⚠️ ${b.text}`;
+      setAiStatus('error', 'API Error — Check .env key', b.text.slice(0, 60));
+    } else {
+      // All good!
+      textEl.innerHTML = b.text;
+      setAiStatus('active', 'AI Briefing Active', 'Claude Sonnet connected via server');
+    }
+
+    tsEl.textContent = b.timestamp ? `Updated: ${fmtTime(b.timestamp)}` : '–';
+  }
+
+  cdEl.textContent = `Next: ${b.next_refresh_in ?? 30}s`;
+  scEl.textContent  = b.scenario ? `[${b.scenario.replace('_',' ')}]` : '';
+}
+
+// Feature 3 – Efficiency
+function updateEfficiency(eff) {
+  if (!eff.ai) return;
+
+  document.getElementById('eff-wait').textContent = `${eff.ai.avg_wait_s}s`;
+  document.getElementById('eff-thru').textContent = `${eff.ai.throughput_vpm}/m`;
+  document.getElementById('eff-co2').textContent  = `${eff.ai.co2_g_per_min}g/m`;
+
+  const imp = eff.improvements || {};
+
+  setPct('eff-wait-pct', imp.wait_pct, true);
+  setPct('eff-thru-pct', imp.throughput_pct, false);
+  setPct('eff-co2-pct',  imp.co2_pct, true);
+
+  const score = eff.ai_impact_score ?? 0;
+  document.getElementById('impact-score').textContent = `${score}%`;
+  document.getElementById('impact-bar').style.width = `${Math.min(100, Math.max(0, score))}%`;
+}
+
+function setPct(id, val, higherMeansGood) {
+  const el = document.getElementById(id);
+  if (val === undefined || val === null) return;
+  const positive = higherMeansGood ? val > 0 : val < 0;
+  el.className = `eff-pct ${positive ? 'positive' : 'negative'}`;
+  el.textContent = `${val > 0 ? '+' : ''}${val}%`;
+}
+
+// Feature 4 – Simulation
+function updateSimState(sim) {
+  simActive = sim.active;
+  const banner = document.getElementById('sim-banner');
+  const statusEl = document.getElementById('sim-status-label');
+  const stopBtn  = document.getElementById('sim-stop-btn');
+
+  document.querySelectorAll('.sim-btn').forEach(b => b.classList.remove('active'));
+
+  if (sim.active) {
+    const endsIn = sim.ends_in ?? 0;
+    banner.textContent = `${sim.label || sim.scenario} — ${endsIn}s remaining`;
+    banner.style.display = 'block';
+    statusEl.textContent = `Active: ${sim.label || sim.scenario} | ${endsIn}s left`;
+    stopBtn.style.display = 'inline-flex';
+    const btn = document.getElementById(`sim-${sim.scenario}`);
+    if (btn) btn.classList.add('active');
+  } else {
+    banner.style.display = 'none';
+    statusEl.textContent = 'No simulation active';
+    stopBtn.style.display = 'none';
+  }
+}
+
+// Feature 5 – Carbon
+function updateCarbon(c) {
+  document.getElementById('carbon-kg').textContent  = (c.total_kg_saved || 0).toFixed(4);
+  document.getElementById('carbon-rate').textContent = `Rate: ${(c.rate_g_per_min || 0).toFixed(2)} g/min saved vs fixed timer`;
+
+  carbonHistory = c.history || [];
+  drawSparkline(carbonHistory);
+}
+
+function drawSparkline(data) {
+  if (!data.length) return;
+  const svgW = 200, svgH = 40;
+  const min = Math.min(...data);
+  const max = Math.max(...data) || 1;
+  const pts = data.map((v, i) => {
+    const x = (i / Math.max(1, data.length - 1)) * svgW;
+    const y = svgH - ((v - min) / (max - min || 1)) * (svgH - 4) - 2;
+    return `${x},${y}`;
+  });
+  const lineD = `M${pts.join(' L')}`;
+  const areaD = `M${pts[0]} L${pts.join(' L')} L${svgW},${svgH} L0,${svgH} Z`;
+  document.getElementById('spark-line').setAttribute('d', lineD);
+  document.getElementById('spark-area').setAttribute('d', areaD);
+}
+
+// ─────────────────────────────────────────────────────────────
+// Incident Log
+// ─────────────────────────────────────────────────────────────
+const _seenIncidents = new Set();
+
+function addIncident(msg, type, ts) {
+  const key = `${type}:${msg}:${ts}`;
+  if (_seenIncidents.has(key)) return;
+  _seenIncidents.add(key);
+  if (_seenIncidents.size > 500) {
+    const first = _seenIncidents.values().next().value;
+    _seenIncidents.delete(first);
+  }
+
+  const log = document.getElementById('incident-log');
+  const row = document.createElement('div');
+  row.className = `incident-row ${type || ''}`;
+  row.innerHTML = `
+    <span class="incident-type">${(type || 'INFO').slice(0,12)}</span>
+    <span class="incident-msg">${msg}</span>
+    <span class="incident-ts">${fmtTime(ts)}</span>`;
+  log.prepend(row);
+  while (log.children.length > 80) log.removeChild(log.lastChild);
+}
+
+function clearIncidentUI() {
+  document.getElementById('incident-log').innerHTML = '';
+}
+
+// ─────────────────────────────────────────────────────────────
+// Simulation Controls
+// ─────────────────────────────────────────────────────────────
+async function startSim(scenario) {
+  if (simActive) { toast('Stop current simulation first', 'err'); return; }
+  try {
+    const res = await fetch(`${BASE_HTTP}/api/features/simulate/start`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ scenario }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.detail || 'Error');
+    toast(`Simulation started: ${scenario.replace('_', ' ')}`, 'ok');
+    addIncident(`Simulation started: ${scenario}`, 'SIM', new Date().toISOString());
+  } catch (err) {
+    toast(`Sim error: ${err.message}`, 'err');
+  }
+}
+
+async function stopSim() {
+  try {
+    const res = await fetch(`${BASE_HTTP}/api/features/simulate/stop`, { method: 'POST' });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.detail || 'Error');
+    toast('Simulation stopped', 'ok');
+    addIncident('Simulation manually stopped', 'SIM', new Date().toISOString());
+  } catch (err) {
+    toast(`Stop error: ${err.message}`, 'err');
+  }
+}
+
+// ─────────────────────────────────────────────────────────────
+// Helpers
+// ─────────────────────────────────────────────────────────────
+function setBadge(id, connected, label) {
+  const el = document.getElementById(id);
+  el.textContent = `● ${label} ${connected ? 'LIVE' : 'DISCONNECTED'}`;
+  el.className = `conn-badge ${connected ? 'connected' : ''}`;
+}
+
+function fmtTime(iso) {
+  if (!iso) return '–';
+  try { return new Date(iso).toLocaleTimeString(); }
+  catch { return iso; }
+}
+
+// ─────────────────────────────────────────────────────────────
+// Init
+// ─────────────────────────────────────────────────────────────
+updateSignalGrid();
+connectMainWS();
+connectFeaturesWS();
+</script>
+</body>
+</html>
