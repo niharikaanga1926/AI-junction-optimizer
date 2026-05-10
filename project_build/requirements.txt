@@ -11,4 +11,3 @@ gymnasium==0.29.1
 numpy==1.26.4
 scipy==1.13.0
 python-multipart==0.0.9
-python-3.11.9
